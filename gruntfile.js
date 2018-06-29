@@ -267,7 +267,7 @@ module.exports = function (grunt) {
     }
   })
 
-  function getTarget() {
+  function getTarget () {
     switch (process.platform) {
       case 'darwin':
         return 'osx'
