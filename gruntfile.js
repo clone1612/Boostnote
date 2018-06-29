@@ -4,6 +4,12 @@ const packager = require('electron-packager')
 
 const WIN = process.platform === 'win32'
 
+const LINUX = process.platform === 'linux'
+const debianInstaller = LINUX ? require('electron-installer-debian') : null
+console.log(LINUX)
+console.log(debianInstaller)
+const redhatInstaller = LINUX ? require('electron-installer-redhat') : null
+
 module.exports = function (grunt) {
   var authCode
   try {
@@ -74,10 +80,6 @@ module.exports = function (grunt) {
 
   grunt.initConfig(initConfig)
   grunt.loadNpmTasks('grunt-electron-installer')
-  if (!WIN) {
-    grunt.loadNpmTasks('grunt-electron-installer-debian')
-    grunt.loadNpmTasks('grunt-electron-installer-redhat')
-  }
 
   grunt.registerTask('compile', function () {
     var done = this.async()
@@ -198,6 +200,31 @@ module.exports = function (grunt) {
       })
   })
 
+  grunt.registerTask('create-debian-installer', function () {
+    const debianOptions = {
+      name: 'boostnote',
+      productName: 'Boostnote',
+      genericName: 'Boostnote',
+      productDescription: 'The opensource note app for developer.',
+      arch: 'amd64',
+      categories: [
+        'Development',
+        'Utility'
+      ],
+      icon: path.join(__dirname, 'resources/app.png'),
+      bin: 'Boostnote',
+      src: path.join(__dirname, 'dist', 'Boostnote-linux-x64'),
+      dest: path.join(__dirname, 'dist')
+    }
+
+    debianInstaller(debianOptions)
+      .then(() => grunt.log.writeln(`Successfully created package at ${debianOptions.dest}`))
+      .catch(err => {
+        grunt.log.error(err, err.stack)
+        console.log(err, err.stack)
+      })
+  })
+
   grunt.registerTask('create-osx-installer', function () {
     var done = this.async()
     var execPath = 'appdmg appdmg.json dist/Boostnote-mac.dmg'
@@ -240,7 +267,7 @@ module.exports = function (grunt) {
     }
   })
 
-  function getTarget () {
+  function getTarget() {
     switch (process.platform) {
       case 'darwin':
         return 'osx'
@@ -264,7 +291,7 @@ module.exports = function (grunt) {
         grunt.task.run(['compile', 'pack:osx', 'codesign', 'create-osx-installer', 'zip:osx'])
         break
       case 'linux':
-        grunt.task.run(['compile', 'pack:linux', 'electron-installer-debian', 'electron-installer-redhat'])
+        grunt.task.run(['compile', 'pack:linux', 'create-debian-installer'])
         break
     }
   })
